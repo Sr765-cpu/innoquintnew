@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EventNest – Volunteers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="navbar" role="navigation" aria-label="Primary">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">EVENT NEST - NESTING IDEAS,CRAFTING EXPERIENCE <span class="group">&lt;InnoQuint&gt;</span></a>
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="nav-links" class="nav-links">
+        <a href="index.html#home">Home</a>
+        <a href="events.html">Events</a>
+        <div class="login-nav" id="login-nav">
+          <a href="#login" id="login-link" aria-expanded="false" aria-haspopup="true">Volunteer Registration</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="volunteers-page" style="max-width:1200px;margin:1rem auto;padding:0 1rem;">
+    <section class="about" aria-label="Volunteers Intro">
+      <h1>Volunteers</h1>
+      <p>Manage and track volunteers across your events.</p>
+    </section>
+
+    <section id="login" class="v-register" aria-label="Volunteer Registration" style="margin:1.25rem 0">
+      <article class="card">
+        <div class="card-body">
+          <h2>Volunteer Registration</h2>
+          <p class="muted">Fill the form below to register as a volunteer.</p>
+          <form id="volunteer-register-form" class="login-form" novalidate>
+            <div class="grid-two">
+              <div class="field"><label for="vr-name">Name</label><input id="vr-name" name="name" type="text" required></div>
+              <div class="field"><label for="vr-email">Email</label><input id="vr-email" name="email" type="email" required></div>
+            </div>
+            <div class="grid-two">
+              <div class="field"><label for="vr-phone">Contact Number</label><input id="vr-phone" name="phone" type="tel" placeholder="e.g., +91 98765 43210"></div>
+              <div class="field"><label for="vr-address">Address</label><input id="vr-address" name="address" type="text" placeholder="Street, City, ZIP"></div>
+            </div>
+            <div class="grid-two">
+              <div class="field"><label for="vr-speciality">Speciality</label>
+                <select id="vr-speciality" name="speciality">
+                  <option value="">Select</option>
+                  <option>Management</option>
+                  <option>Technical</option>
+                  <option>Hospitality</option>
+                  <option>Medical</option>
+                  <option>Logistics</option>
+                </select>
+              </div>
+              <div class="field"><label for="vr-status">Status</label>
+                <select id="vr-status" name="status">
+                  <option>Available</option>
+                  <option>Busy</option>
+                  <option>On Leave</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-two">
+              <div class="field"><label for="vr-available">Available Dates</label><input id="vr-available" name="availableDates" type="text" placeholder="e.g., 28-30 Oct, Weekends"></div>
+              <div class="field"><label for="vr-times">Availability Times</label><input id="vr-times" name="availabilityTimes" type="text" placeholder="e.g., 9am–1pm, evenings"></div>
+            </div>
+            <div class="field"><label for="vr-roles">Preferred Role</label>
+              <select id="vr-roles" name="role">
+                <option value="registration">Registration Desk</option>
+                <option value="usher">Usher / Crowd Management</option>
+                <option value="tech">Technical Support</option>
+                <option value="firstaid">First Aid</option>
+                <option value="logistics">Logistics</option>
+                <option value="cleaning">Cleanup</option>
+                <option value="hospitality">Hospitality</option>
+                <option value="social">Social Media</option>
+              </select>
+            </div>
+            <div class="field"><label for="vr-motivation">Motivation / Experience</label><textarea id="vr-motivation" name="motivation" rows="3" placeholder="Tell us about your experience or motivation"></textarea></div>
+            <div class="grid-two">
+              <div class="field"><label for="vr-emg-name">Emergency Contact Name</label><input id="vr-emg-name" name="emergencyName" type="text"></div>
+              <div class="field"><label for="vr-emg-phone">Emergency Contact Phone</label><input id="vr-emg-phone" name="emergencyPhone" type="tel"></div>
+            </div>
+            <div class="grid-two">
+              <div class="field"><label for="vr-tshirt">T-shirt Size</label>
+                <select id="vr-tshirt" name="tshirt">
+                  <option value="">Select</option>
+                  <option>XS</option>
+                  <option>S</option>
+                  <option>M</option>
+                  <option>L</option>
+                  <option>XL</option>
+                  <option>XXL</option>
+                </select>
+              </div>
+              <div class="field"><label for="vr-transport">Transportation Needs (optional)</label><input id="vr-transport" name="transport" type="text" placeholder="e.g., need pickup from station"></div>
+            </div>
+            <div class="field"><label for="vr-message">Message (optional)</label><textarea id="vr-message" name="message" rows="3"></textarea></div>
+            <div class="field"><label for="vr-cert">Certifications / ID (optional)</label><input id="vr-cert" name="certifications" type="file" multiple></div>
+            <label class="remember"><input type="checkbox" id="vr-consent-waiver" name="consentWaiver" required> I agree to the volunteer waiver and terms</label>
+            <label class="remember"><input type="checkbox" id="vr-consent-bg" name="consentBgCheck"> I consent to a background verification if required</label>
+            <div class="form-actions">
+              <button type="reset" class="btn btn-ghost">Clear</button>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+          </form>
+        </div>
+      </article>
+    </section>
+
+    <section class="v-dash" aria-label="Overview Dashboard">
+      <div class="v-filters">
+        <input id="v-search" type="search" placeholder="Search volunteers by name, email, speciality..." aria-label="Search volunteers">
+        <select id="v-status" aria-label="Filter by status">
+          <option value="">All Status</option>
+          <option>Available</option>
+          <option>Busy</option>
+          <option>On Leave</option>
+        </select>
+        <select id="v-event" aria-label="Filter by event">
+          <option value="">All Events</option>
+        </select>
+      </div>
+      <div class="v-stats">
+        <article class="v-card" data-metric="totalVolunteers">
+          <div class="icon">👥</div>
+          <div class="val" id="v-total">0</div>
+          <div class="label">Total Volunteers</div>
+        </article>
+        <article class="v-card" data-metric="availableVolunteers">
+          <div class="icon">✅</div>
+          <div class="val" id="v-available">0</div>
+          <div class="label">Available Volunteers</div>
+        </article>
+        <article class="v-card" data-metric="totalEvents">
+          <div class="icon">📅</div>
+          <div class="val" id="v-events">0</div>
+          <div class="label">Total Events</div>
+        </article>
+        <article class="v-card" data-metric="upcomingEvents">
+          <div class="icon">⏭️</div>
+          <div class="val" id="v-upcoming">0</div>
+          <div class="label">Upcoming Events</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="v-table-wrap" aria-label="Volunteer Details Table">
+      <div class="v-table-controls">
+        <label>Sort by
+          <select id="v-sort">
+            <option value="name">Name</option>
+            <option value="email">Email</option>
+            <option value="event">Assigned Event</option>
+            <option value="status">Status</option>
+          </select>
+        </label>
+      </div>
+      <div class="v-table" role="table" aria-label="Volunteers table">
+        <div class="v-row v-head" role="row">
+          <div class="v-cell" role="columnheader">Name</div>
+          <div class="v-cell" role="columnheader">Email</div>
+          <div class="v-cell" role="columnheader">Contact</div>
+          <div class="v-cell" role="columnheader">Speciality</div>
+          <div class="v-cell" role="columnheader">Available Dates</div>
+          <div class="v-cell" role="columnheader">Assigned Event</div>
+          <div class="v-cell" role="columnheader">Status</div>
+          <div class="v-cell" role="columnheader">Actions</div>
+        </div>
+        <div id="v-body"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" aria-label="Footer">
+    <div class="footer-grid">
+      <div>
+        <h3>EVENT NEST - NESTING IDEAS,CRAFTING EXPERIENCE <span class="group">&lt;InnoQuint&gt;</span></h3>
+        <p>contact@connecthub.example</p>
+        <div class="socials">
+          <a href="#" aria-label="Twitter">Twitter</a>
+          <a href="#" aria-label="Instagram">Instagram</a>
+          <a href="#" aria-label="LinkedIn">LinkedIn</a>
+        </div>
+      </div>
+      <div>
+        <h4>Newsletter</h4>
+        <form class="newsletter" novalidate>
+          <input type="email" placeholder="Your email" aria-label="Email">
+          <button class="btn btn-primary" type="submit">Subscribe</button>
+        </form>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <ul class="links">
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="copyright">© <span id="year"></span> EVENT NEST - NESTING IDEAS,CRAFTING EXPERIENCE • &lt;InnoQuint&gt;</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    (function(){
+      const form = document.getElementById('volunteer-register-form');
+      if(!form) return;
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        if(!form.checkValidity()){ form.reportValidity(); return; }
+        const fd = new FormData(form);
+        const payload = Object.fromEntries(fd.entries());
+        payload.role = form.querySelector('#vr-roles')?.value || '';
+        try{
+          const key = 'volunteers';
+          const list = JSON.parse(localStorage.getItem(key)||'[]');
+          list.unshift({ id: Date.now(), ...payload });
+          localStorage.setItem(key, JSON.stringify(list));
+          alert('Thank you for registering as a volunteer!');
+          form.reset();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }catch(err){
+          alert('Saved locally.');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

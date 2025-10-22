@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Account – EventNest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="navbar" role="navigation" aria-label="Primary">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">EVENT NEST - NESTING IDEAS,CRAFTING EXPERIENCE <span class="group">&lt;InnoQuint&gt;</span></a>
+      <span class="nav-tagline" aria-hidden="true">Nesting Ideas · Crafting Experience</span>
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="nav-links" class="nav-links">
+        <a href="index.html#home">Home</a>
+        <a href="events.html">Events</a>
+        <a href="#">Volunteer</a>
+        <a href="#">Dashboard</a>
+        <a href="#">Communication</a>
+        <div class="login-nav" id="login-nav">
+          <a href="#login" id="login-link" aria-expanded="false" aria-haspopup="true">Login</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main style="max-width:980px;margin:1.2rem auto;padding:0 1rem;">
+    <section class="about" aria-label="Create Account" style="backdrop-filter: blur(6px);">
+      <h1>Create Account</h1>
+      <p>Register to organize or participate in community events.</p>
+    </section>
+
+    <section class="highlights" aria-label="Registration Form">
+      <div class="card" style="padding:1rem;">
+        <form id="register-form-standalone" class="login-form" novalidate>
+          <div class="field">
+            <label for="sa-role">Register as</label>
+            <select id="sa-role" name="role" required>
+              <option value="user">Organizer</option>
+              <option value="participant">Participant</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sa-name">Full Name</label>
+            <input id="sa-name" name="name" type="text" required>
+          </div>
+          <div class="field">
+            <label for="sa-email">Email Address</label>
+            <input id="sa-email" name="email" type="email" required>
+          </div>
+          <div class="field password-field">
+            <label for="sa-password">Password</label>
+            <div class="password-wrap">
+              <input id="sa-password" name="password" type="password" minlength="6" required>
+              <button type="button" class="pw-toggle" id="sa-pw-toggle" aria-label="Show password">👁️</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="sa-confirm">Confirm Password</label>
+            <input id="sa-confirm" name="confirm" type="password" minlength="6" required>
+          </div>
+          <div class="field">
+            <label for="sa-organization">Organization (optional)</label>
+            <input id="sa-organization" name="organization" type="text" placeholder="e.g., City Youth Club">
+          </div>
+          <div class="field">
+            <label for="sa-phone">Phone</label>
+            <input id="sa-phone" name="phone" type="tel" placeholder="e.g., +91 98765 43210">
+          </div>
+          <div class="field">
+            <label for="sa-city">City</label>
+            <input id="sa-city" name="city" type="text" required>
+          </div>
+          <div class="field">
+            <label for="sa-interests">Interests</label>
+            <select id="sa-interests" name="interests" multiple>
+              <option>Community</option>
+              <option>Environment</option>
+              <option>Health</option>
+              <option>Education</option>
+              <option>Arts & Culture</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sa-experience">Experience Level</label>
+            <select id="sa-experience" name="experience">
+              <option>Beginner</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+            </select>
+          </div>
+          <label class="remember"><input id="sa-terms" type="checkbox" required> I agree to the Terms of Service and Privacy Policy</label>
+          <div class="form-actions">
+            <a class="btn btn-ghost" href="index.html">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create Account</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" aria-label="Footer">
+    <div class="footer-grid">
+      <div>
+        <h3>EVENT NEST - NESTING IDEAS,CRAFTING EXPERIENCE <span class="group">&lt;InnoQuint&gt;</span></h3>
+        <p>contact@connecthub.example</p>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <ul class="links">
+          <li><a href="index.html#reviews">Reviews</a></li>
+          <li><a href="index.html#contact">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // Standalone register handler
+    (function(){
+      const form = document.getElementById('register-form-standalone');
+      const pw = document.getElementById('sa-password');
+      const pw2 = document.getElementById('sa-confirm');
+      const pwToggle = document.getElementById('sa-pw-toggle');
+      if(pwToggle && pw){ pwToggle.addEventListener('click',()=>{ const isPw=pw.type==='password'; pw.type=isPw?'text':'password'; pwToggle.setAttribute('aria-label', isPw?'Hide password':'Show password');}); }
+      if(!form) return;
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        if(pw.value !== pw2.value){ alert('Passwords do not match.'); return; }
+        const fd = new FormData(form);
+        const payload = {
+          role: fd.get('role')?.toString() || 'user',
+          name: fd.get('name')?.toString().trim(),
+          email: fd.get('email')?.toString().trim(),
+          address: fd.get('city')?.toString().trim(),
+          password: fd.get('password')?.toString() || '',
+          organization: fd.get('organization')?.toString().trim() || undefined,
+          phone: fd.get('phone')?.toString().trim() || undefined,
+          interests: Array.from(document.getElementById('sa-interests')?.selectedOptions || []).map(o=>o.value),
+          experience: fd.get('experience')?.toString() || undefined,
+        };
+        if(!payload.name || !payload.email || !payload.address || !payload.password){ alert('Please fill all required fields.'); return; }
+        try{
+          const res = await fetch('http://localhost:4000/api/auth/register',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const data = await res.json();
+          if(!res.ok) throw new Error(data.message||'Registration failed');
+          alert(`Welcome ${data.user.name}! Account created as ${data.user.role}.`);
+          window.location.href = 'events.html';
+        }catch(err){ alert(err.message||'Network error'); }
+      });
+    })();
+  </script>
+</body>
+</html>

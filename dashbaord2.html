@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EventNest Dashboard</title>
+  <meta name="color-scheme" content="light only" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0b0a0e',
+            primary: { DEFAULT: '#2563eb' },
+            danger: { DEFAULT: '#ef4444' },
+            pink: { 500: '#ec4899' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    html, body { height: 100%; }
+    body { font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    .card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,.12); }
+    .subtle { color: var(--muted); }
+    .chip { display:inline-flex; align-items:center; gap:.25rem; padding:.125rem .5rem; border-radius:9999px; font-size:.75rem; font-weight:600; border:1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.10); }
+  </style>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>window.API_BASE = 'http://localhost:4000';</script>
+</head>
+<body class="min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const API_BASE = window.API_BASE || 'http://localhost:4000';
+
+    const Section = ({ title, right, children, className = '', titleStyle }) => (
+      <section className={`card p-4 ${className}`}>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold" style={titleStyle}>{title}</h2>
+          {right}
+        </div>
+        {children}
+      </section>
+    );
+
+    const KpiCard = ({ label, value, sub }) => (
+      <div className="card p-4">
+        <div className="flex items-center justify-between">
+          <div className="text-sm subtle">{label}</div>
+          <div className="text-xl">🔥</div>
+        </div>
+        <div className="mt-1 text-2xl font-extrabold text-white">{value}</div>
+        {sub && <div className="text-xs mt-1 subtle">{sub}</div>}
+        <div className="mt-1 text-xs" style={{ color: '#22c55e' }}>+5% vs last week</div>
+      </div>
+    );
+
+    const QuickAction = ({ label, onClick }) => (
+      <button onClick={onClick} className="btn btn-ghost">{label}</button>
+    );
+
+    const Sparkline = ({ data = [10, 13, 9, 15, 18, 14, 20], color = '#FF69B4' }) => {
+      const width = 120, height = 40, padding = 4;
+      const min = Math.min(...data), max = Math.max(...data);
+      const points = data.map((v, i) => {
+        const x = padding + i * ((width - 2 * padding) / (data.length - 1));
+        const y = height - padding - ((v - min) / (max - min || 1)) * (height - 2 * padding);
+        return `${x},${y}`;
+      }).join(' ');
+      return (
+        <svg width={width} height={height} className="overflow-visible">
+          <polyline fill="none" stroke={color} strokeWidth="2" points={points} />
+        </svg>
+      );
+    };
+
+    const ChartCard = ({ title, type, data, options, className = '' }) => {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (!ref.current) return;
+        const ctx = ref.current.getContext('2d');
+        const chart = new Chart(ctx, { type, data, options });
+        return () => chart.destroy();
+      }, [type, data, options]);
+      return (
+        <section className={`card p-4 ${className}`}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold" style={{
+              background: 'linear-gradient(90deg,#FF69B4,#BF00FF,#FFD700,#FF69B4)',
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', letterSpacing: '.3px'
+            }}>{title}</h2>
+          </div>
+          <canvas ref={ref} height="140"></canvas>
+        </section>
+      );
+    };
+
+    const ActivityItem = ({ item }) => (
+      <div className="flex items-start gap-3 py-2 border-b last:border-b-0" style={{ borderColor: 'rgba(255,255,255,.12)' }}>
+        <div className="chip">{item.type}</div>
+        <div className="text-sm">
+          <div className="font-medium text-white">{item.title}</div>
+          <div className="text-xs subtle">{item.time}</div>
+        </div>
+      </div>
+    );
+
+    function useApi(url, initial = null) {
+      const [data, setData] = useState(initial);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      useEffect(() => {
+        let mounted = true;
+        (async () => {
+          try {
+            const res = await axios.get(url);
+            if (mounted) { setData(res.data); setError(null); }
+          } catch (e) { setError(e?.message || 'Network'); }
+          finally { setLoading(false); }
+        })();
+        return () => { mounted = false };
+      }, [url]);
+      return { data, loading, error };
+    }
+
+    const Dashboard = () => {
+      const { data: kpis } = useApi(`${API_BASE}/api/dashboard/kpis`, { totals: {} });
+      const { data: activityData } = useApi(`${API_BASE}/api/activities?limit=10`, { items: [] });
+      const { data: perfData } = useApi(`${API_BASE}/api/analytics/performance`, { series: [10, 12, 11, 13, 15, 14, 18] });
+
+      const [openCreate, setOpenCreate] = useState(false);
+      const [openInvite, setOpenInvite] = useState(false);
+      const [openManage, setOpenManage] = useState(false);
+      const [openCampaign, setOpenCampaign] = useState(false);
+      const [attendees, setAttendees] = useState([]);
+      const [invite, setInvite] = useState({ email: '', name: '', eventId: '' });
+      const [form, setForm] = useState({ name:'', date:'', time:'', location:'', type:'', category:'', tickets:[{label:'General',free:true,price:0}], schedule:[{title:'',start:'',end:''}], emails:{confirmations:true,reminders:true} });
+      const [campaign, setCampaign] = useState({ title: '', message: '' });
+
+      const updateField = (k,v)=> setForm(p=>({ ...p, [k]: v }));
+      const updateNested = (section, idx, key, v)=> setForm(p=>({ ...p, [section]: p[section].map((it,i)=> i===idx?{...it,[key]:v}:it) }));
+      const addRow = (section, row)=> setForm(p=>({ ...p, [section]: [...p[section], row] }));
+      const removeRow = (section, idx)=> setForm(p=>({ ...p, [section]: p[section].filter((_,i)=>i!==idx) }));
+
+      const openManageAttendees = async () => {
+        setOpenManage(true);
+        try { const res = await axios.get(`${API_BASE}/api/registrations`); setAttendees(res.data?.items||[]); }
+        catch { setAttendees([]); }
+      };
+
+      const submitInvite = (e)=>{
+        e.preventDefault();
+        const subject = encodeURIComponent(`Invitation${invite.name ? `: ${invite.name}` : ''}`);
+        const body = encodeURIComponent(`Hi,\nYou're invited${invite.eventId ? ` to event #${invite.eventId}` : ''}.\n\nRegards,\nEventNest`);
+        window.location.href = `mailto:${invite.email}?subject=${subject}&body=${body}`;
+        setOpenInvite(false);
+      };
+
+      const submitCampaign = async (e)=>{
+        e.preventDefault();
+        const text = `${campaign.title}\n\n${campaign.message}`;
+        try { await navigator.clipboard.writeText(text); alert('Campaign content copied to clipboard.'); } catch {}
+        if(navigator.share){ try{ await navigator.share({ title: campaign.title, text: campaign.message }); }catch{} }
+        setOpenCampaign(false);
+      };
+
+      const submitForm = (e)=>{ e.preventDefault(); console.log('Create Event Submission', form); alert('Event created (mock).'); setOpenCreate(false); };
+
+      return (
+        <div className="min-h-screen">
+          <header className="navbar" role="navigation" aria-label="Dashboard">
+            <div className="nav-inner" style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <a href="index.html" className="btn btn-ghost">← Home</a>
+              <div className="flex gap-2">
+                <button className="btn btn-primary" onClick={()=>setOpenCreate(true)}>Create Event</button>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto p-4 space-y-4 events-page">
+            <section className="about" aria-label="Dashboard Intro">
+              <h1>Dashboard</h1>
+              <p>Discover curated insights, manage events, and take quick actions.</p>
+            </section>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <KpiCard label="Total Events" value={kpis?.totals?.events ?? 24} sub="All-time" />
+              <KpiCard label="Active Events" value={kpis?.totals?.upcoming ?? 5} sub="Live" />
+              <KpiCard label="Total Attendees" value={(activityData?.items?.length ?? 100) + (kpis?.totals?.registrations ?? 1234)} sub="Cumulative" />
+              <KpiCard label="Total Revenue" value={`₹${(kpis?.totals?.revenue ?? 20000).toLocaleString()}`} sub="MTD" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <ChartCard title="Attendee Type Distribution" type="pie" data={{
+                labels: ['Students', 'Professionals', 'Volunteers', 'VIPs'],
+                datasets: [{ data: [35, 40, 18, 7], backgroundColor: ['#60a5fa', '#34d399', '#fbbf24', '#f472b6'] }]
+              }} options={{ plugins: { legend: { labels: { color: '#e5e7eb' } } } }} />
+              <ChartCard title="Ticket Type Split" type="doughnut" data={{
+                labels: ['Regular', 'VIP', 'Free Passes'],
+                datasets: [{ data: [62, 12, 26], backgroundColor: ['#a78bfa', '#f472b6', '#22d3ee'] }]
+              }} options={{ cutout: '55%', plugins: { legend: { labels: { color: '#e5e7eb' } } } }} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <ChartCard title="Event Popularity" type="bar" data={{
+                labels: ['Cleanup', 'Tree Planting', 'Health Camp', 'Coding Kids'],
+                datasets: [{ label: 'Attendees', data: [120, 95, 140, 80], backgroundColor: '#FF69B4' }]
+              }} options={{ scales:{ x:{ ticks:{ color:'#e5e7eb' } }, y:{ ticks:{ color:'#e5e7eb' } } }, plugins:{ legend:{ labels:{ color:'#e5e7eb' } } } }} />
+              <ChartCard title="Revenue Trend" type="line" data={{
+                labels: ['Week 1','Week 2','Week 3','Week 4','Week 5'],
+                datasets: [{ label:'Revenue', data:[60,72,68,85,96], borderColor:'#BF00FF', backgroundColor:'rgba(191,0,255,.25)', tension:.35, fill:true }]
+              }} options={{ scales:{ x:{ ticks:{ color:'#e5e7eb' } }, y:{ ticks:{ color:'#e5e7eb' } } }, plugins:{ legend:{ labels:{ color:'#e5e7eb' } } } }} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <Section title="Quick Actions" className="lg:col-span-2" titleStyle={{ background:'linear-gradient(90deg,#FF69B4,#BF00FF,#FFD700,#FF69B4)', WebkitBackgroundClip:'text', backgroundClip:'text', color:'transparent', letterSpacing:'.3px' }}>
+                <div className="flex flex-wrap gap-2">
+                  <QuickAction label="Create Event" onClick={()=>setOpenCreate(true)} />
+                  <QuickAction label="Invite Attendees" onClick={()=>setOpenInvite(true)} />
+                  <QuickAction label="Manage Attendees" onClick={openManageAttendees} />
+                  <QuickAction label="Launch Campaign" onClick={()=>setOpenCampaign(true)} />
+                </div>
+              </Section>
+
+              <Section title="Event Performance" titleStyle={{ background:'linear-gradient(90deg,#FF69B4,#BF00FF,#FFD700,#FF69B4)', WebkitBackgroundClip:'text', backgroundClip:'text', color:'transparent', letterSpacing:'.3px' }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm subtle">Last 7 days</div>
+                    <div className="text-3xl font-extrabold text-slate-100">{(perfData?.series?.slice(-1)[0] ?? 18)}%</div>
+                  </div>
+                  <Sparkline data={perfData?.series ?? [10,12,11,13,15,14,18]} />
+                </div>
+              </Section>
+            </div>
+
+            <Section title="Recent Activity" className="lg:col-span-2" titleStyle={{ background:'linear-gradient(90deg,#FF69B4,#BF00FF,#FFD700,#FF69B4)', WebkitBackgroundClip:'text', backgroundClip:'text', color:'transparent', letterSpacing:'.3px' }}>
+              <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,.12)' }}>
+                {(activityData?.items?.length ? activityData.items : [
+                  { type: 'Event', title: 'Cleanup Drive created', time: '2m ago' },
+                  { type: 'Reg', title: 'New registration: Maya', time: '6m ago' },
+                  { type: 'Msg', title: 'Vendor confirmed AV setup', time: '14m ago' }
+                ]).map((item, idx) => <ActivityItem key={idx} item={item} />)}
+              </div>
+            </Section>
+
+            {/* Create Event Modal */}
+            {openCreate && (
+              <div className="modal open" role="dialog" aria-modal="true" aria-labelledby="create-title" onClick={()=>setOpenCreate(false)}>
+                <div className="modal-backdrop" />
+                <div className="modal-dialog" onClick={(e)=>e.stopPropagation()}>
+                  <button className="modal-close" aria-label="Close" onClick={()=>setOpenCreate(false)}>✕</button>
+                  <div className="modal-content" style={{ maxHeight:'70vh', overflowY:'auto' }}>
+                    <div className="login-select" style={{ textAlign:'left' }}>
+                      <h2 id="create-title" className="text-xl font-bold">Create Event</h2>
+                      <p className="subtle">Fill basic details, ticketing, schedule, and emails.</p>
+                    </div>
+                    <form className="login-form" onSubmit={submitForm}>
+                      <div className="grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:'.8rem 1rem' }}>
+                        <div className="field"><label>Event Name</label><input type="text" value={form.name} onChange={e=>updateField('name', e.target.value)} required /></div>
+                        <div className="field"><label>Date</label><input type="date" value={form.date} onChange={e=>updateField('date', e.target.value)} required /></div>
+                        <div className="field"><label>Time</label><input type="time" value={form.time} onChange={e=>updateField('time', e.target.value)} required /></div>
+                        <div className="field"><label>Location</label><input type="text" value={form.location} onChange={e=>updateField('location', e.target.value)} required /></div>
+                        <div className="field"><label>Event Type</label><select value={form.type} onChange={e=>updateField('type', e.target.value)}><option value="">Select</option><option>In-person</option><option>Virtual</option><option>Hybrid</option></select></div>
+                        <div className="field"><label>Category</label><select value={form.category} onChange={e=>updateField('category', e.target.value)}><option value="">Select</option><option>Community</option><option>Education</option><option>Environment</option><option>Health</option><option>Workshop</option></select></div>
+                      </div>
+                      <div className="card p-3" style={{ marginTop:'.5rem' }}>
+                        <div className="text-sm font-semibold mb-2">Ticket Types & Pricing</div>
+                        {form.tickets.map((t, idx)=> (
+                          <div key={idx} className="grid" style={{ display:'grid', gridTemplateColumns:'1.4fr .6fr .6fr auto', gap:'.5rem', alignItems:'end', marginBottom:'.5rem' }}>
+                            <div className="field"><label>Label</label><input type="text" value={t.label} onChange={e=>updateNested('tickets', idx, 'label', e.target.value)} required /></div>
+                            <div className="field"><label>Free?</label><select value={t.free?'yes':'no'} onChange={e=>updateNested('tickets', idx, 'free', e.target.value==='yes')}><option value="yes">Yes</option><option value="no">No</option></select></div>
+                            <div className="field"><label>Price (₹)</label><input type="number" min="0" step="1" value={t.price} onChange={e=>updateNested('tickets', idx, 'price', Number(e.target.value))} disabled={t.free} /></div>
+                            <button type="button" className="btn btn-ghost" onClick={()=>removeRow('tickets', idx)}>Remove</button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn btn-secondary" onClick={()=>addRow('tickets', { label:'', free:true, price:0 })}>Add Ticket Type</button>
+                      </div>
+                      <div className="card p-3" style={{ marginTop:'.5rem' }}>
+                        <div className="text-sm font-semibold mb-2">Event Schedule (Agenda)</div>
+                        {form.schedule.map((s, idx)=> (
+                          <div key={idx} className="grid" style={{ display:'grid', gridTemplateColumns:'1.2fr .6fr .6fr auto', gap:'.5rem', alignItems:'end', marginBottom:'.5rem' }}>
+                            <div className="field"><label>Session Title</label><input type="text" value={s.title} onChange={e=>updateNested('schedule', idx, 'title', e.target.value)} required /></div>
+                            <div className="field"><label>Start</label><input type="time" value={s.start} onChange={e=>updateNested('schedule', idx, 'start', e.target.value)} required /></div>
+                            <div className="field"><label>End</label><input type="time" value={s.end} onChange={e=>updateNested('schedule', idx, 'end', e.target.value)} required /></div>
+                            <button type="button" className="btn btn-ghost" onClick={()=>removeRow('schedule', idx)}>Remove</button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn btn-secondary" onClick={()=>addRow('schedule', { title:'', start:'', end:'' })}>Add Session</button>
+                      </div>
+                      <div className="form-actions" style={{ marginTop:'.6rem' }}>
+                        <button type="button" className="btn btn-ghost" onClick={()=>setOpenCreate(false)}>Cancel</button>
+                        <button type="submit" className="btn btn-primary wide">Submit</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Invite Modal */}
+            {openInvite && (
+              <div className="modal open" role="dialog" aria-modal="true" aria-labelledby="invite-title" onClick={()=>setOpenInvite(false)}>
+                <div className="modal-backdrop" />
+                <div className="modal-dialog" onClick={(e)=>e.stopPropagation()}>
+                  <button className="modal-close" aria-label="Close" onClick={()=>setOpenInvite(false)}>✕</button>
+                  <div className="modal-content">
+                    <div className="login-select" style={{ textAlign:'left' }}>
+                      <h2 id="invite-title" className="text-xl font-bold">Invite Attendees</h2>
+                      <p className="subtle">Send an email invite. We'll open your email app.</p>
+                    </div>
+                    <form className="login-form" onSubmit={submitInvite}>
+                      <div className="field"><label>Email</label><input type="email" value={invite.email} onChange={e=>setInvite(v=>({ ...v, email:e.target.value }))} required /></div>
+                      <div className="field"><label>Event Name</label><input type="text" value={invite.name} onChange={e=>setInvite(v=>({ ...v, name:e.target.value }))} placeholder="Optional" /></div>
+                      <div className="field"><label>Event ID</label><input type="text" value={invite.eventId} onChange={e=>setInvite(v=>({ ...v, eventId:e.target.value }))} placeholder="Optional" /></div>
+                      <div className="form-actions"><button type="button" className="btn btn-ghost" onClick={()=>setOpenInvite(false)}>Cancel</button><button type="submit" className="btn btn-primary">Send Invite</button></div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Manage Modal */}
+            {openManage && (
+              <div className="modal open" role="dialog" aria-modal="true" aria-labelledby="manage-title" onClick={()=>setOpenManage(false)}>
+                <div className="modal-backdrop" />
+                <div className="modal-dialog" onClick={(e)=>e.stopPropagation()}>
+                  <button className="modal-close" aria-label="Close" onClick={()=>setOpenManage(false)}>✕</button>
+                  <div className="modal-content" style={{ maxHeight:'70vh', overflowY:'auto' }}>
+                    <div className="login-select" style={{ textAlign:'left' }}>
+                      <h2 id="manage-title" className="text-xl font-bold">Manage Attendees</h2>
+                      <p className="subtle">Loaded from API: /api/registrations</p>
+                    </div>
+                    <div className="card p-3">
+                      <div className="text-sm subtle mb-2">Total: {attendees.length}</div>
+                      <div className="space-y-2">
+                        {(attendees.length ? attendees : [{ id:1, eventId:1, name:'Maya' }, { id:2, eventId:1, name:'Rahul' }]).map(a=> (
+                          <div key={a.id} className="flex items-center justify-between p-2 rounded-lg border bg-white text-slate-800" style={{ borderColor:'rgba(0,0,0,.12)' }}>
+                            <div className="text-sm"><span className="font-semibold">{a.name}</span> <span className="subtle">· Event #{a.eventId}</span></div>
+                            <div className="flex gap-2">
+                              <button className="btn btn-ghost" style={{ color:'#000', borderColor:'rgba(0,0,0,.25)' }} onClick={()=>alert(`Message to ${a.name}`)}>Message</button>
+                              <button className="btn btn-secondary" onClick={()=>alert(`Checked-in ${a.name}`)}>Check-in</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Campaign Modal */}
+            {openCampaign && (
+              <div className="modal open" role="dialog" aria-modal="true" aria-labelledby="campaign-title" onClick={()=>setOpenCampaign(false)}>
+                <div className="modal-backdrop" />
+                <div className="modal-dialog" onClick={(e)=>e.stopPropagation()}>
+                  <button className="modal-close" aria-label="Close" onClick={()=>setOpenCampaign(false)}>✕</button>
+                  <div className="modal-content">
+                    <div className="login-select" style={{ textAlign:'left' }}>
+                      <h2 id="campaign-title" className="text-xl font-bold">Launch Campaign</h2>
+                      <p className="subtle">Compose content to share. We'll copy it to your clipboard and try native share if supported.</p>
+                    </div>
+                    <form className="login-form" onSubmit={submitCampaign}>
+                      <div className="field"><label>Title</label><input type="text" value={campaign.title} onChange={e=>setCampaign(v=>({ ...v, title:e.target.value }))} required /></div>
+                      <div className="field"><label>Message</label><textarea rows="4" value={campaign.message} onChange={e=>setCampaign(v=>({ ...v, message:e.target.value }))} required></textarea></div>
+                      <div className="form-actions"><button type="button" className="btn btn-ghost" onClick={()=>setOpenCampaign(false)}>Cancel</button><button type="submit" className="btn btn-primary">Launch</button></div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </main>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Dashboard />);
+  </script>
+</body>
+</html>
